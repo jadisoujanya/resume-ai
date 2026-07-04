@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Career AI System</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="container mt-5">
+
+        <h1 class="text-center mb-4">
+            Career Intelligence & Smart Hiring System
+        </h1>
+
+        <!--Upload Resume section-->
+
+        <div class="card p-4 mb-4">
+
+            <h3>Upload Resume PDF</h3>
+
+            <input type="file" id="resumeFile" class="form-control" accept=".pdf">
+
+            <button class="btn btn-primary mt-3" onclick="uploadResume()">
+
+        Upload & Analyze Resume
+
+    </button>
+
+        </div>
+        <!-- Resume Analysis -->
+
+        <div class="card p-4 mb-4">
+
+            <h3>Resume Analysis</h3>
+
+            <textarea id="resumeText" class="form-control" rows="6" placeholder="Paste Resume Text">
+    </textarea>
+
+            <select id="targetRole" class="form-control">
+
+    <option value="data scientist">Data Scientist</option>
+
+    <option value="ai engineer">AI Engineer</option>
+
+    <option value="machine learning engineer">Machine Learning Engineer</option>
+
+    <option value="backend developer">Backend Developer</option>
+
+    <option value="frontend developer">Frontend Developer</option>
+
+    <option value="full stack developer">Full Stack Developer</option>
+
+    <option value="cloud engineer">Cloud Engineer</option>
+
+    <option value="devops engineer">DevOps Engineer</option>
+
+    <option value="cyber security analyst">Cyber Security Analyst</option>
+
+    <option value="data engineer">Data Engineer</option>
+
+    <option value="software engineer">Software Engineer</option>
+
+    <option value="nlp engineer">NLP Engineer</option>
+
+    <option value="ui/ux designer">UI/UX Designer</option>
+
+    <option value="business analyst">Business Analyst</option>
+
+    <option value="qa engineer">QA Engineer</option>
+
+    <option value="android developer">Android Developer</option>
+
+    <option value="ios developer">iOS Developer</option>
+
+    <option value="blockchain developer">Blockchain Developer</option>
+
+</select>
+            <button class="btn btn-success mt-3" onclick="runAnalysis()">
+
+        Analyze Resume
+
+    </button>
+
+        </div>
+
+        <!-- Job Description Matching -->
+
+        <div class="card p-4 mb-4">
+
+            <h3>Job Description Matching</h3>
+
+            <label class="fw-bold">
+        Candidate Resume
+    </label>
+
+            <textarea id="jobResume" class="form-control mb-3" rows="6" placeholder="Paste candidate resume here">
+    </textarea>
+
+            <label class="fw-bold">
+        Job Description
+    </label>
+
+            <textarea id="jobDescription" class="form-control" rows="6" placeholder="Paste job description here">
+    </textarea>
+
+            <button class="btn btn-primary mt-3" onclick="matchJob()">
+
+        Analyze Job Match
+
+    </button>
+
+        </div>
+
+        <!-- Resume Comparison -->
+
+        <div class="card p-4 mb-4">
+
+            <h3>Resume Comparison</h3>
+
+            <textarea id="resume1" class="form-control mb-2" rows="4" placeholder="Resume 1">
+        </textarea>
+
+            <textarea id="resume2" class="form-control" rows="4" placeholder="Resume 2">
+        </textarea>
+
+            <button class="btn btn-warning mt-3" onclick="compareResumes()">
+
+            Compare Candidates
+
+        </button>
+
+        </div>
+
+        <div id="result"></div>
+
+    </div>
+    <script src="script.js"></script>
+</body>
+
+</html>
