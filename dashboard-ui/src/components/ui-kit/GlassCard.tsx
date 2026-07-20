@@ -5,9 +5,9 @@ export function GlassCard({
   children, className, title, description, action, padded = true,
 }: {
   children: ReactNode;
-  className?: string;
   title?: string;
   description?: string;
+  className?: string;
   action?: ReactNode;
   padded?: boolean;
 }) {

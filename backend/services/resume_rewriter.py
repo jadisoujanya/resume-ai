@@ -1,13 +1,9 @@
 import os
-import json
-from groq import Groq
 from dotenv import load_dotenv
+from ai_client import client
 
 load_dotenv()
 
-client = Groq(
-    api_key=os.getenv("GROQ_API_KEY")
-)
 
 
 def rewrite_resume(resume_text: str, target_role: str):

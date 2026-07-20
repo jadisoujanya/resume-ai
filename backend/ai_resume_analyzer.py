@@ -1,13 +1,9 @@
 import os
 import json
 from dotenv import load_dotenv
-from groq import Groq
+from ai_client import client
 
 load_dotenv()
-
-client = Groq(
-    api_key=os.getenv("GROQ_API_KEY")
-)
 
 
 def analyze_resume(resume_text: str):

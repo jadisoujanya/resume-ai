@@ -2,6 +2,9 @@ from fastapi import FastAPI
 from fastapi import UploadFile, File
 from pdfminer.high_level import extract_text
 import tempfile
+# from routes.interview_feedback import router as interview_feedback_router
+from routes.learning import router as learning_router
+from routes.analytics import router as analytics_router
 from skills_data import skills
 from resume_analyzer import analyze_resume as rule_based_analyze
 from ai_resume_analyzer import analyze_resume as ai_analyze_resume
@@ -15,6 +18,8 @@ from user_profile import router as profile_router
 from experience import router as experience_router
 from recommended_focus import generate_recommended_focus
 from explainable_ai import explain_match
+from schemas import SettingsUpdate
+from ai_client import client
 from routes.interview import router as interview_router
 from career_roadmap import (
     ROLE_ALIASES,
@@ -37,7 +42,6 @@ import re
 from database import Base, engine
 from dashboard_api import router as dashboard_router
 from job_recommender import recommend_jobs
-
 
 
 def extract_summary(text):
@@ -130,6 +134,8 @@ app = FastAPI()
 origins = [
     "http://localhost:8081",
     "http://127.0.0.1:8081",
+    "http://localhost:8082",
+    "http://127.0.0.1:8082",
 ]
 
 app.add_middleware(
@@ -149,6 +155,9 @@ app.include_router(certification_router)
 app.include_router(dashboard_router)
 app.include_router(notification_router)
 app.include_router(interview_router)
+app.include_router(learning_router)
+app.include_router(analytics_router)
+#app.include_router(interview_feedback_router)
 
 from pydantic import BaseModel
 
@@ -600,6 +609,7 @@ from models import (
     Experience,
     Certification,
     Notification,
+    UserSettings
 )
 
 def get_db():
@@ -801,7 +811,9 @@ async def upload_resume(
         )
 
         learning_roadmap = generate_learning_roadmap(
-            analysis["skills_found"]
+            role,
+            detected,
+            missing_skills
         )
 
         # -------------------------------
@@ -934,6 +946,11 @@ def score_trend():
         for r in resumes
     ]
     
+
+
+
+
+
 # ==========================
 # Download PDF
 # ==========================
@@ -1136,11 +1153,106 @@ def candidate_dashboard():
             }
         ]
     }
+
+
+
+@app.get("/settings/{user_id}")
+def get_settings(
+    user_id: int,
+    db: Session = Depends(get_db)
+):
+    settings = (
+        db.query(UserSettings)
+        .filter(UserSettings.user_id == user_id)
+        .first()
+    )
+
+    if settings is None:
+        settings = UserSettings(user_id=user_id)
+        db.add(settings)
+        db.commit()
+        db.refresh(settings)
+
+    return {
+        "push_notifications": settings.push_notifications,
+        "weekly_email": settings.weekly_email,
+        "ai_alerts": settings.ai_alerts,
+        "sound_effects": settings.sound_effects,
+        "reduced_motion": settings.reduced_motion,
+        "high_contrast": settings.high_contrast,
+        "auto_timezone": settings.auto_timezone,
+        "two_factor": settings.two_factor,
+        "recruiter_visibility": settings.recruiter_visibility,
+        "public_profile": settings.public_profile,
+        "auto_rewrite": settings.auto_rewrite,
+        "explain_ai": settings.explain_ai,
+        "share_data": settings.share_data,
+    }
+
+
+
+@app.put("/settings/{user_id}")
+def update_settings(
+    user_id: int,
+    data: SettingsUpdate,
+    db: Session = Depends(get_db)
+):
+    print("========== SETTINGS UPDATE ==========")
+    print(data.dict())
+
+    settings = (
+        db.query(UserSettings)
+        .filter(UserSettings.user_id == user_id)
+        .first()
+    )
+
+    if settings is None:
+        settings = UserSettings(user_id=user_id)
+        db.add(settings)
+
+    settings.push_notifications = data.push_notifications
+    settings.weekly_email = data.weekly_email
+    settings.ai_alerts = data.ai_alerts
+    settings.sound_effects = data.sound_effects
+    settings.reduced_motion = data.reduced_motion
+    settings.high_contrast = data.high_contrast
+    settings.auto_timezone = data.auto_timezone
+    settings.two_factor = data.two_factor
+    settings.recruiter_visibility = data.recruiter_visibility
+    settings.public_profile = data.public_profile
+    settings.auto_rewrite = data.auto_rewrite
+    settings.explain_ai = data.explain_ai
+    settings.share_data = data.share_data
+
+    db.commit()
+    db.refresh(settings)
+
+    return {
+        "success": True,
+        "settings": {
+            "push_notifications": settings.push_notifications,
+            "weekly_email": settings.weekly_email,
+            "ai_alerts": settings.ai_alerts,
+            "sound_effects": settings.sound_effects,
+            "reduced_motion": settings.reduced_motion,
+            "high_contrast": settings.high_contrast,
+            "auto_timezone": settings.auto_timezone,
+            "two_factor": settings.two_factor,
+            "recruiter_visibility": settings.recruiter_visibility,
+            "public_profile": settings.public_profile,
+            "auto_rewrite": settings.auto_rewrite,
+            "explain_ai": settings.explain_ai,
+            "share_data": settings.share_data,
+        }
+    }
+
+
+
+
 # ==========================
 # Resume Rewriter API
 # ==========================
 
-from pydantic import BaseModel
 
 class RewriteRequest(BaseModel):
     resume_text: str
@@ -1177,3 +1289,130 @@ def rewrite(req: RewriteRequest):
 
 
     return result
+
+
+from pydantic import BaseModel
+
+
+class CoachRequest(BaseModel):
+    user_id: int
+    message: str
+
+
+
+#----------------------#
+#   CAREER COACH  #
+#----------------------#
+
+@app.post("/career-coach")
+def career_coach(
+    request: CoachRequest,
+    db: Session = Depends(get_db)
+):
+
+    resume = (
+        db.query(Resume)
+        .filter(
+            Resume.user_id == request.user_id
+        )
+        .order_by(
+            Resume.id.desc()
+        )
+        .first()
+    )
+
+
+    if not resume:
+        return {
+            "reply":
+            "Please upload your resume first."
+        }
+
+
+
+    prompt = f"""
+You are CareerAI, a friendly AI Career Coach.
+
+The user's resume is already analyzed.
+
+Resume Context
+
+Role:
+{resume.detected_role}
+
+Skills:
+{resume.skills}
+
+Career Level:
+{resume.career_level}
+
+User Message:
+{request.message}
+
+Instructions:
+
+- Talk like ChatGPT.
+- Be friendly, supportive and conversational.
+- Keep replies under 120 words.
+- Use simple English.
+- Don't dump the user's resume unless they ask.
+- Don't mention every skill.
+- Give practical advice.
+- If the user says "Hi", greet them naturally and introduce yourself.
+- If the user asks career questions, answer based on their resume.
+- End with one follow-up question when appropriate.
+
+Examples:
+
+User: Hi
+
+Assistant:
+Hey! 👋 I'm your AI Career Coach.
+
+I'm here to help you improve your resume, prepare for interviews, choose certifications, find skill gaps, and plan your career.
+
+What would you like help with today?
+
+User: Thank you
+
+Assistant:
+You're welcome! 😊
+Feel free to ask me anything about your career, resume, interviews, or learning roadmap.
+
+Only answer the latest user message.
+
+Keep replies under 150 words unless the user asks for detailed explanations.
+"""
+
+
+
+    response = client.chat.completions.create(
+
+        model="llama-3.3-70b-versatile",
+
+        temperature=0.2,
+
+        messages=[
+
+            {
+             "role":"system",
+             "content":
+             "You are an expert career coach."
+            },
+
+            {
+             "role":"user",
+             "content":prompt
+            }
+
+        ]
+
+    )
+
+
+    return {
+
+        "reply":
+        response.choices[0].message.content
+
+    }

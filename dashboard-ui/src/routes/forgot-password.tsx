@@ -4,7 +4,7 @@ export const Route = createFileRoute("/forgot-password")({
   component: ForgotPasswordPage,
 });
 
-export default function ForgotPasswordPage() {
+function ForgotPasswordPage() {
   return (
     <div className="min-h-screen bg-[#0B1120] relative overflow-hidden flex items-center justify-center">
 

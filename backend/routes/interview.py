@@ -1,22 +1,27 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
 from models import Resume
 from pydantic import BaseModel
-import google.generativeai as genai
-import os
 
-router = APIRouter(prefix="/interview", tags=["Interview"])
+from google import genai
+from settings import GEMINI_API_KEY
 
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+client = genai.Client(api_key=GEMINI_API_KEY)
 
-model = genai.GenerativeModel("gemini-2.5-flash")
-
-
+router = APIRouter(
+    prefix="/interview",
+    tags=["Interview"]
+)
 class InterviewRequest(BaseModel):
     user_id: int
     role: str
     difficulty: str = "Medium"
+
+class FeedbackRequest(BaseModel):
+    question: str
+    answer: str
+
 
 
 @router.post("/generate")
@@ -48,7 +53,16 @@ Example:
 2. What is JWT?
 """
 
-    response = model.generate_content(prompt)
+
+    try:
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt
+        )
+        
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500, detail=str(e))
 
     text = response.text.strip()
 
@@ -68,3 +82,53 @@ Example:
             questions.append(question)
 
     return questions
+
+
+   
+@router.post("/feedback")
+def interview_feedback(req: FeedbackRequest):
+
+    prompt = f"""
+
+You are an experienced technical interviewer.
+
+The candidate is practicing interviews.
+
+Question:
+{req.question}
+
+Answer:
+{req.answer}
+
+Respond in a friendly tone.
+
+Start with one positive sentence.
+
+Then provide:
+
+### What you did well
+- ...
+
+### What can be improved
+- ...
+
+### Sample better answer
+(2-4 sentences)
+
+Don't be harsh.
+Don't give scores.
+Keep the response concise.
+"""
+
+
+    try:
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    return {
+        "feedback": response.text.strip()
+    }

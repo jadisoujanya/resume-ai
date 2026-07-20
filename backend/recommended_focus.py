@@ -1,11 +1,9 @@
-from groq import Groq
 import os
-import json
 from dotenv import load_dotenv
+from ai_client import client
 
 load_dotenv()
 
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 
 def generate_recommended_focus(role, missing_skills):

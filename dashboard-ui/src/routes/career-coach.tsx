@@ -1,8 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppLayout, PageHeader } from "@/components/layout/AppLayout";
 import { GlassCard } from "@/components/ui-kit/GlassCard";
-import { COACH_MESSAGES } from "@/lib/mock-data";
-import { Sparkles, Send, Paperclip, Mic } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { askCareerCoach } from "@/lib/api";
+import {
+  Sparkles,
+  Send,
+  Paperclip,
+  ChevronDown,
+} from "lucide-react";
 
 export const Route = createFileRoute("/career-coach")({
   head: () => ({ meta: [{ title: "AI Career Coach · Career Intelligence" }] }),
@@ -10,69 +16,324 @@ export const Route = createFileRoute("/career-coach")({
 });
 
 const SUGGESTED = [
-  "Rewrite my resume summary for ML Engineer roles",
-  "What are my top 3 gaps to reach staff level?",
-  "Prep me for the Nimbus Labs system design round",
-  "Which certifications will actually move the needle?",
-  "How do I negotiate a $30K increase?",
+  "How can I improve my resume?",
+  "How can I increase my ATS score?",
+  "Am I ready for placements?",
+  "Help me prepare for interviews.",
+  "What technical skills should I learn next?",
+  "Suggest certifications for my career.",
+  "Recommend projects for my resume.",
+  "Create a 3-month learning roadmap.",
+  "How do I build a strong LinkedIn profile?",
+  "What career path suits my skills?"
 ];
 
 function Page() {
-  return (
-    <AppLayout>
-      <PageHeader eyebrow="Personal AI" title="AI Career Coach" subtitle="Your always-on career strategist — trained on your resume, market data, and 400k hiring outcomes." />
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        <GlassCard className="lg:col-span-8" padded={false}>
-          <div className="p-5 h-[520px] flex flex-col">
-            <div className="flex-1 overflow-y-auto space-y-4">
-              {COACH_MESSAGES.map((m, i) => (
-                <div key={i} className={`flex gap-3 ${m.role === "user" ? "flex-row-reverse" : ""}`}>
-                  <div className={`w-8 h-8 shrink-0 rounded-lg grid place-items-center text-[10px] font-semibold ${m.role === "assistant" ? "gradient-primary-bg text-white" : "bg-white/[0.06]"}`}>
-                    {m.role === "assistant" ? <Sparkles className="w-4 h-4" /> : "AS"}
-                  </div>
-                  <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm ${m.role === "assistant" ? "bg-white/[0.04] border border-border/50" : "bg-primary/15 border border-primary/25"}`}>
-                    {m.content}
-                  </div>
+  const [messages, setMessages] = useState<any[]>([]);
+
+  const [input, setInput] = useState("");
+
+  const [loading, setLoading] = useState(false);
+
+  const [selectedPrompt, setSelectedPrompt] = useState("");
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+   
+  const [showPrompts, setShowPrompts] = useState(false);
+
+const bottomRef = useRef<HTMLDivElement>(null);
+
+const sendMessage = async (text?: string) => {
+
+    const message = (text ?? input).trim();
+
+    if (!message) return;
+
+    setLoading(true);
+
+    setInput("");
+
+    setMessages(prev => [
+        ...prev,
+        {
+            role: "user",
+            content: message
+        }
+    ]);
+
+    try {
+
+        const res = await askCareerCoach(1, message);
+
+        setMessages(prev => [
+            ...prev,
+            {
+                role: "assistant",
+                content: res.reply
+            }
+        ]);
+
+    } catch {
+
+        setMessages(prev => [
+            ...prev,
+            {
+                role: "assistant",
+                content: "Sorry, I couldn't respond."
+            }
+        ]);
+
+    }
+
+    setLoading(false);
+
+};
+
+
+  useEffect(() => {
+
+    bottomRef.current?.scrollIntoView({
+      behavior: "smooth"
+    });
+
+  }, [messages]);
+
+return (
+  <AppLayout>
+    <PageHeader
+      eyebrow="Personal AI"
+      title="AI Career Coach"
+      subtitle="Your always-on career strategist."
+    />
+
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+
+      {/* ================= CHAT ================= */}
+
+      <GlassCard className="lg:col-span-8" padded={false}>
+        <div className="p-5 h-[520px] flex flex-col">
+
+          {/* Chat Area */}
+
+          <div className="flex-1 overflow-y-auto space-y-4">
+
+            {messages.map((m, i) => (
+
+              <div
+                key={i}
+                className={`flex ${
+                  m.role === "user"
+                    ? "justify-end"
+                    : "justify-start"
+                }`}
+              >
+
+                <div
+                  className={`max-w-[75%] px-4 py-3 rounded-2xl text-sm whitespace-pre-wrap ${
+                    m.role === "user"
+                      ? "bg-blue-600 text-white"
+                      : "bg-white/[0.06] border border-border text-white"
+                  }`}
+                >
+                  {m.content}
                 </div>
-              ))}
-              <div className="flex gap-3">
-                <div className="w-8 h-8 rounded-lg gradient-primary-bg grid place-items-center"><Sparkles className="w-4 h-4 text-white animate-pulse" /></div>
-                <div className="bg-white/[0.04] border border-border/50 rounded-2xl px-4 py-2.5 text-sm">
-                  <span className="inline-flex gap-1"><span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" /><span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" style={{animationDelay:".2s"}} /><span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" style={{animationDelay:".4s"}} /></span>
-                </div>
+
               </div>
-            </div>
-            <div className="mt-3 rounded-2xl bg-white/[0.03] border border-border/70 p-2 flex items-center gap-2">
-              <button className="p-2 rounded-lg hover:bg-white/[0.05]"><Paperclip className="w-4 h-4 text-muted-foreground" /></button>
-              <input className="flex-1 bg-transparent outline-none text-sm px-2" placeholder="Ask anything about your career…" />
-              <button className="p-2 rounded-lg hover:bg-white/[0.05]"><Mic className="w-4 h-4 text-muted-foreground" /></button>
-              <button className="w-9 h-9 rounded-lg gradient-primary-bg grid place-items-center text-white"><Send className="w-4 h-4" /></button>
-            </div>
-          </div>
-        </GlassCard>
 
-        <div className="lg:col-span-4 space-y-4">
-          <GlassCard title="Suggested prompts">
-            <div className="space-y-2">
-              {SUGGESTED.map((s) => (
-                <button key={s} className="w-full text-left p-3 rounded-xl bg-white/[0.03] border border-border/50 hover:bg-white/[0.06] transition-colors text-sm">
-                  {s}
-                </button>
-              ))}
-            </div>
-          </GlassCard>
-          <GlassCard title="Context loaded" description="Coach knows about">
-            <div className="space-y-1.5 text-xs">
-              {["Resume v4 (312 KB)","5 target roles saved","Interview history (3 sessions)","Skill gap analysis","Learning progress (24%)"].map((t) => (
-                <div key={t} className="flex items-center gap-2 p-2 rounded-lg bg-white/[0.02]">
-                  <span className="w-1.5 h-1.5 rounded-full bg-success" /> {t}
+            ))}
+
+            {loading && (
+
+              <div className="flex gap-3">
+
+                <div className="w-8 h-8 rounded-lg gradient-primary-bg grid place-items-center">
+                  <Sparkles className="w-4 h-4 text-white animate-pulse" />
                 </div>
-              ))}
-            </div>
-          </GlassCard>
+
+                <div className="bg-white/[0.04] border border-border rounded-2xl px-4 py-3">
+
+                  <span className="inline-flex gap-1">
+
+                    <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+
+                    <span
+                      className="w-2 h-2 rounded-full bg-primary animate-pulse"
+                      style={{ animationDelay: ".2s" }}
+                    />
+
+                    <span
+                      className="w-2 h-2 rounded-full bg-primary animate-pulse"
+                      style={{ animationDelay: ".4s" }}
+                    />
+
+                  </span>
+
+                </div>
+
+              </div>
+
+            )}
+
+            {/* AUTO SCROLL */}
+            <div ref={bottomRef} />
+
+          </div>
+
+          {/* INPUT BAR */}
+
+          <div className="mt-3 rounded-2xl bg-white/[0.03] border border-border/70 p-2 flex items-center gap-2">
+
+            {/* Upload */}
+
+            <button
+              className="p-2 rounded-lg hover:bg-white/[0.05]"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Paperclip className="w-4 h-4" />
+            </button>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              hidden
+              onChange={(e) => {
+
+                const file = e.target.files?.[0];
+
+                if (!file) return;
+
+                setMessages(prev => [
+
+                  ...prev,
+
+                  {
+                    role: "user",
+                    content: `📎 Uploaded: ${file.name}`,
+                  },
+
+                  {
+                    role: "assistant",
+                    content:
+                      "Thanks! I received your file. File analysis isn't enabled yet, but you can ask me questions about it and I'll do my best to help.",
+                  },
+
+                ]);
+
+              }}
+            />
+
+            {/* Message */}
+
+            <input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Ask me anything about your career..."
+
+              onKeyDown={(e) => {
+
+                if (e.key === "Enter") {
+
+                  e.preventDefault();
+
+                  sendMessage();
+
+                }
+
+              }}
+
+              className="flex-1 bg-transparent outline-none text-sm px-2"
+            />
+
+            {/* Send */}
+
+            <button
+              onClick={() => sendMessage()}
+              disabled={loading || !input.trim()}
+              className="p-2 rounded-lg hover:bg-white/10 disabled:opacity-50"
+            >
+              <Send className="w-5 h-5" />
+            </button>
+
+          </div>
+
         </div>
+      </GlassCard>
+
+      {/* ================= RIGHT PANEL ================= */}
+
+      <div className="lg:col-span-4 space-y-4">
+
+    <GlassCard>
+
+    <div className="flex items-center justify-between mb-3">
+
+        <h3 className="font-semibold">
+            Suggested Prompts
+        </h3>
+
+        <ChevronDown className="w-4 h-4 text-muted-foreground"/>
+
+    </div>
+
+    <select
+
+        value={selectedPrompt}
+
+        onChange={(e)=>{
+
+            setSelectedPrompt(e.target.value);
+
+            setInput(e.target.value);
+
+        }}
+
+        className="w-full rounded-xl bg-white/[0.04] border border-border p-3 text-sm outline-none"
+
+    >
+
+        <option value="">
+            Choose a prompt...
+        </option>
+
+        {SUGGESTED.map((s)=>(
+
+            <option
+                key={s}
+                value={s}
+            >
+                {s}
+            </option>
+
+        ))}
+
+    </select>
+
+</GlassCard>
+
+     
+
+     <GlassCard title="AI Career Coach">
+
+    <p className="text-sm text-muted-foreground leading-6">
+
+        👋 Hi! I'm your AI Career Coach.
+
+        <br /><br />
+
+        I can help you improve your resume, prepare for interviews,
+        explore career paths, recommend skills to learn, suggest
+        projects, explain certifications, and answer placement-related
+        questions in a simple and friendly way.
+
+    </p>
+
+</GlassCard>
       </div>
-    </AppLayout>
-  );
+
+    </div>
+
+  </AppLayout>
+);
+
 }

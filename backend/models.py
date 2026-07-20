@@ -165,3 +165,28 @@ class InterviewAnswer(Base):
     score = Column(Float)
 
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class UserSettings(Base):
+    __tablename__ = "user_settings"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True)
+
+    push_notifications = Column(Boolean, default=True)
+    weekly_email = Column(Boolean, default=True)
+    ai_alerts = Column(Boolean, default=True)
+    sound_effects = Column(Boolean, default=False)
+
+    reduced_motion = Column(Boolean, default=False)
+    high_contrast = Column(Boolean, default=False)
+    auto_timezone = Column(Boolean, default=True)
+
+    two_factor = Column(Boolean, default=False)
+    recruiter_visibility = Column(Boolean, default=True)
+    public_profile = Column(Boolean, default=False)
+
+    auto_rewrite = Column(Boolean, default=True)
+    explain_ai = Column(Boolean, default=True)
+    share_data = Column(Boolean, default=False)

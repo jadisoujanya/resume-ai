@@ -6,7 +6,7 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-export default function LoginPage() {
+function LoginPage() {
   const [loading, setLoading] = useState(false);
 
 const [form, setForm] = useState({

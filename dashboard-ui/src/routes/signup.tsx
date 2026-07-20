@@ -6,7 +6,7 @@ export const Route = createFileRoute("/signup")({
   component: SignupPage,
 });
 
-export default function SignupPage() {
+function SignupPage() {
 
  const [showPassword, setShowPassword] = useState(false);
 
